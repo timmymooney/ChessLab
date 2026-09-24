@@ -11,9 +11,9 @@ The long-term goal is to allow a user to enter their Chess.com username, select 
 ### Current Roadmap
 
 * [X] Set up Python project
-* [   ] Connect to the Chess.com API
-* [   ] Retrieve player's game archives
-* [   ] Download games within a selected date range
+* [X] Connect to the Chess.com API
+* [X] Retrieve player's game archives
+* [X] Download games within a selected date range
 * [   ] Parse PGN data and store games in a structured format
 * [   ] Analyse games with Stockfish
 * [   ] Classify opening, middlegame and endgame positions
@@ -101,23 +101,24 @@ NOTE: The stack specifics may change as the project develops.
 
 ## Project Structure
 
-The initial repo is intentionally small.
-
 ```text
-ChessLab/
-│
+ChessLab
 ├── README.md
+├── LICENSE
 ├── pyproject.toml
 ├── .gitignore
 ├── .env.example
-│
-└── src/
-    └── chesslab/
-        ├── __init__.py
-        │
-        └── api/
-            ├── __init__.py
-            └── chesscom.py
+├── .DS_Store
+├── src
+│   └── chesslab
+│       ├── __init__.py
+│       └── api
+│           ├── __init__.py
+│           └── chesscom.py
+├── tests
+│   └── test_chesscom.py
+└── notebooks
+    └── 01_api_exploration.ipynb
 ```
 
 NOTE: The project will grow larger as new functionality is added.
