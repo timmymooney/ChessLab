@@ -14,7 +14,8 @@ The long-term goal is to allow a user to enter their Chess.com username, select 
 * [X] Connect to the Chess.com API
 * [X] Retrieve player's game archives
 * [X] Download games within a selected date range
-* [   ] Parse PGN data and store games in a structured format
+* [X] Parse PGN data
+* [   ] Game data storage
 * [   ] Analyse games with Stockfish
 * [   ] Classify opening, middlegame and endgame positions
 * [   ] Identify mistakes and recurring patterns
@@ -54,6 +55,8 @@ Chess.com API
  Game parsing
       │
  Structured game data
+      │
+ Data Storage
       │
  Stockfish analysis
       │
@@ -112,16 +115,21 @@ ChessLab
 ├── src
 │   └── chesslab
 │       ├── __init__.py
-│       └── api
+│       ├──  api
 │           ├── __init__.py
 │           └── chesscom.py
+│       └── chess
+│           ├── __init__.py
+│           └── parser.py
 ├── tests
-│   └── test_chesscom.py
+│   ├── test_chesscom.py
+│   └── test_parser.py
 └── notebooks
-    └── 01_api_exploration.ipynb
+    ├── 01_api_exploration.ipynb
+    └── 02_chess_game_parsing.ipynb
 ```
 
-NOTE: The project will grow larger as new functionality is added.
+NOTE: This directory tree is growing larger as new functionality is being added.
 
 ---
 
