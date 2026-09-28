@@ -15,7 +15,7 @@ The long-term goal is to allow a user to enter their Chess.com username, select 
 * [X] Retrieve player's game archives
 * [X] Download games within a selected date range
 * [X] Parse PGN data
-* [   ] Game data storage
+* [X] Game data storage
 * [   ] Analyse games with Stockfish
 * [   ] Classify opening, middlegame and endgame positions
 * [   ] Identify mistakes and recurring patterns
@@ -105,28 +105,41 @@ NOTE: The stack specifics may change as the project develops.
 ## Project Structure
 
 ```text
-ChessLab
+ChessLab/
+│
 ├── README.md
-├── LICENSE
 ├── pyproject.toml
 ├── .gitignore
 ├── .env.example
-├── .DS_Store
-├── src
-│   └── chesslab
+│
+├── data/
+│   └── chesslab.db  <-- (this is local only, not pushed to remote) 
+│
+├── notebooks/
+│   ├── 01_api_exploration.ipynb
+│   ├── 02_chess_game_parsing.ipynb
+│   └── 03_data_storage.ipynb
+│
+├── src/
+│   └── chesslab/
 │       ├── __init__.py
-│       ├──  api
+│       │
+│       ├── api/
+│       │   ├── __init__.py
+│       │   └── chesscom.py
+│       │
+│       ├── chess/
+│       │   ├── __init__.py
+│       │   └── parser.py
+│       │
+│       └── storage/
 │           ├── __init__.py
-│           └── chesscom.py
-│       └── chess
-│           ├── __init__.py
-│           └── parser.py
-├── tests
-│   ├── test_chesscom.py
-│   └── test_parser.py
-└── notebooks
-    ├── 01_api_exploration.ipynb
-    └── 02_chess_game_parsing.ipynb
+│           └── database.py
+│
+└── tests/
+    ├── test_chesscom.py
+    ├── test_database.py  <-- (WIP)
+    └── test_parser.py 
 ```
 
 NOTE: This directory tree is growing larger as new functionality is being added.
