@@ -16,7 +16,7 @@ The long-term goal is to allow a user to enter their Chess.com username, select 
 * [X] Download games within a selected date range
 * [X] Parse PGN data
 * [X] Game data storage
-* [   ] Analyse games with Stockfish
+* [X] Analyse games with Stockfish
 * [   ] Classify opening, middlegame and endgame positions
 * [   ] Identify mistakes and recurring patterns
 * [   ] Build player performance profiles
@@ -118,7 +118,8 @@ ChessLab/
 ├── notebooks/
 │   ├── 01_api_exploration.ipynb
 │   ├── 02_chess_game_parsing.ipynb
-│   └── 03_data_storage.ipynb
+│   ├── 03_data_storage.ipynb
+│   └── 04_chess_engine_analysis.ipynb
 │
 ├── src/
 │   └── chesslab/
@@ -132,6 +133,10 @@ ChessLab/
 │       │   ├── __init__.py
 │       │   └── parser.py
 │       │
+│       ├── engine/
+│       │   ├── __init__.py
+│       │   └── stockfish.py
+│       │
 │       └── storage/
 │           ├── __init__.py
 │           └── database.py
@@ -139,7 +144,8 @@ ChessLab/
 └── tests/
     ├── test_chesscom.py
     ├── test_database.py  <-- (WIP)
-    └── test_parser.py 
+    ├── test_parser.py 
+    └── test_stockfish.py  <-- (WIP)
 ```
 
 NOTE: This directory tree is growing larger as new functionality is being added.
