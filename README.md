@@ -113,13 +113,14 @@ ChessLab/
 ├── .env.example
 │
 ├── data/
-│   └── chesslab.db  <-- (this is local only, not pushed to remote) 
+│   └── chesslab.db  <-- (this is local for now, not pushed to remote) 
 │
 ├── notebooks/
 │   ├── 01_api_exploration.ipynb
 │   ├── 02_chess_game_parsing.ipynb
 │   ├── 03_data_storage.ipynb
-│   └── 04_chess_engine_analysis.ipynb
+│   ├── 04_chess_engine_analysis.ipynb
+│   └── 05_chess_game_analytics.ipynb
 │
 ├── src/
 │   └── chesslab/
@@ -143,9 +144,9 @@ ChessLab/
 │
 └── tests/
     ├── test_chesscom.py
-    ├── test_database.py  <-- (WIP)
+    ├── test_database.py
     ├── test_parser.py 
-    └── test_stockfish.py  <-- (WIP)
+    └── test_stockfish.py
 ```
 
 NOTE: This directory tree is growing larger as new functionality is being added.
