@@ -111,6 +111,7 @@ ChessLab/
 ├── pyproject.toml
 ├── .gitignore
 ├── .env.example
+├── app.py
 │
 ├── data/
 │   └── chesslab.db  <-- (this is local for now, not pushed to remote) 
@@ -125,6 +126,10 @@ ChessLab/
 ├── src/
 │   └── chesslab/
 │       ├── __init__.py
+│       │
+│       ├── analytics/
+│       │   ├── __init__.py
+│       │   └── performance.py
 │       │
 │       ├── api/
 │       │   ├── __init__.py
