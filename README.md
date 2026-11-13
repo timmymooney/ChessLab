@@ -127,6 +127,10 @@ ChessLab/
 │   └── chesslab/
 │       ├── __init__.py
 │       │
+│       ├── analytics/
+│       │   ├── __init__.py
+│       │   └── performance.py
+│       │
 │       ├── api/
 │       │   ├── __init__.py
 │       │   └── chesscom.py
