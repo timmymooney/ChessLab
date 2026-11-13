@@ -26,6 +26,7 @@ def get_game_info(game: chess.pgn.Game, username: str | None = None) -> dict:
         "white": game.headers.get("White"),
         "black": game.headers.get("Black"),
         "result": game.headers.get("Result"),
+        "event": game.headers.get("Event"),
         "date": game.headers.get("Date"),
         "eco": game.headers.get("ECO"),
         "white_elo": game.headers.get("WhiteElo"),
