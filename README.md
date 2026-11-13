@@ -111,6 +111,7 @@ ChessLab/
 ├── pyproject.toml
 ├── .gitignore
 ├── .env.example
+├── app.py
 │
 ├── data/
 │   └── chesslab.db  <-- (this is local for now, not pushed to remote) 
