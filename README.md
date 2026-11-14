@@ -17,13 +17,11 @@ The long-term goal is to allow a user to enter their Chess.com username, select 
 * [X] Parse PGN data
 * [X] Game data storage
 * [X] Analyse games with Stockfish
-* [   ] Classify opening, middlegame and endgame positions
-* [   ] Identify mistakes and recurring patterns
-* [   ] Build player performance profiles
-* [   ] Generate personalised study recommendations
+* [X] Build interactive Streamlit (or similar) application
+* [X] Classify opening, middlegame and endgame positions in app
+* [X] Build overall player performance profiles
+* [   ] Generate personalised study recommendations (WIP)
 * [   ] Generate natural-language analysis reports
-* [   ] Build interactive Streamlit (or similar) application
-* [   ] Generate personalised training positions
 * [   ] Deploy application
 
 ---
@@ -139,6 +137,10 @@ ChessLab/
 │       │   ├── __init__.py
 │       │   └── parser.py
 │       │
+│       ├── coaching/
+│       │   ├── __init__.py
+│       │   └── study_plan.py
+│       │
 │       ├── engine/
 │       │   ├── __init__.py
 │       │   └── stockfish.py
@@ -189,6 +191,13 @@ pip install -e ".[dev]"
 
 ```bash
 pytest
+```
+
+### 5. Run the app
+
+```bash
+# run from the base root of the project
+streamlit run app.py
 ```
 
 ---
