@@ -1,6 +1,7 @@
 import plotly.express as px
 import requests
 import streamlit as st
+from pathlib import Path
 
 from chesslab.api.chesscom import get_player_stats
 from chesslab.coaching.study_plan import analyse_recent_games, build_study_plan
@@ -13,9 +14,18 @@ from chesslab.analytics.performance import (
     prepare_games,
 )
 
+# define the logo path
+LOGO_PATH = Path(__file__).parent / "assets" / "chesslab-logo.png"
+
+# display the chesslab branding
+st.image(str(LOGO_PATH), width=440)
 
 # configure the app
-st.set_page_config(page_title="ChessLab", page_icon="♟️", layout="wide")
+st.set_page_config(
+    page_title="",
+    page_icon=LOGO_PATH,
+    layout="wide",
+)
 
 
 # cache chess.com requests without coupling the data modules to streamlit
@@ -30,8 +40,7 @@ def load_ratings(username):
 
 
 # app header
-st.title("♟️ ChessLab")
-st.caption("Analyse your Chess.com games and improve your chess.")
+st.title("Analyse and improve your chess!")
 st.divider()
 
 username = st.text_input(

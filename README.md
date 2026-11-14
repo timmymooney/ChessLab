@@ -1,4 +1,7 @@
-# ChessLab ♟
+<div align="center">
+  <img src="assets/chesslab-logo.png" alt="ChessLab Logo" width="280">
+</div>
+
 
 **Personal chess performance analytics and coaching powered by Chess.com game data.**
 
