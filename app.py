@@ -3,6 +3,7 @@ import requests
 import streamlit as st
 
 from chesslab.api.chesscom import get_player_stats
+from chesslab.coaching.study_plan import analyse_recent_games, build_study_plan
 from chesslab.analytics.performance import (
     get_ending_counts,
     get_endings_by_result,
@@ -38,7 +39,7 @@ username = st.text_input(
     placeholder="e.g. hikaru",
 ).strip()
 
-if st.button("Analyse games", type="primary"):
+if st.button("Analyse my games", type="primary"):
     if username:
         st.session_state["username"] = username
     else:
@@ -50,7 +51,7 @@ if "username" in st.session_state:
     username = st.session_state["username"]
 
     try:
-        with st.spinner("Downloading and analysing games..."):
+        with st.spinner("Downloading and analysing your games..."):
             games_df = load_games(username)
             ratings = load_ratings(username)
 
@@ -90,7 +91,7 @@ if "username" in st.session_state:
     with col3:
         with st.container(border=True):
             st.metric(
-                "Loss Rate",
+                "🙂‍↕️ Loss Rate",
                 f"{stats['loss_percentage']:.1f}%",
                 delta=f"{stats['loss_count']} losses",
                 delta_color="off",
@@ -99,7 +100,7 @@ if "username" in st.session_state:
     with col4:
         with st.container(border=True):
             st.metric(
-                "Draw Rate",
+                "🤝 Draw Rate",
                 f"{stats['draw_percentage']:.1f}%",
                 delta=f"{stats['draw_count']} draws",
                 delta_color="off",
@@ -114,13 +115,13 @@ if "username" in st.session_state:
     col1, col2, col3 = st.columns(3)
     with col1:
         with st.container(border=True):
-            st.metric("Rapid", rapid)
+            st.metric("⏱️ Rapid", rapid)
     with col2:
         with st.container(border=True):
-            st.metric("Blitz", blitz)
+            st.metric("⚡️ Blitz", blitz)
     with col3:
         with st.container(border=True):
-            st.metric("Daily", daily)
+            st.metric("☀️ Daily", daily)
 
     st.divider()
 
@@ -166,7 +167,9 @@ if "username" in st.session_state:
         text="count",
         color_discrete_sequence=["#606060"],
     )
-    fig.update_layout(yaxis={"categoryorder": "total ascending"}, margin=dict(t=55, b=30))
+    fig.update_layout(
+        yaxis={"categoryorder": "total ascending"}, margin=dict(t=55, b=30)
+    )
     st.plotly_chart(fig, use_container_width=True)
 
     # compare wins and losses by ending reason
@@ -189,3 +192,75 @@ if "username" in st.session_state:
     )
     fig.update_layout(margin=dict(t=55, b=30))
     st.plotly_chart(fig, use_container_width=True)
+
+    st.divider()
+    st.subheader("Recommended Study Plan")
+    st.caption(
+        "Analyse five recent games with Stockfish (Stockfish depth=10). "
+        "This may take a minute or two."
+    )
+
+    if st.button("Generate study plan", type="primary"):
+        try:
+            with st.spinner("Stockfish is reviewing your recent games..."):
+                mistakes, analysed_count = analyse_recent_games(
+                    username, limit=5, depth=10
+                )
+            st.session_state["study_result"] = (
+                username, mistakes, analysed_count
+            )
+        except (FileNotFoundError, OSError, ValueError, requests.RequestException) as error:
+            st.error(f"Unable to analyse games: {error}")
+
+    study_result = st.session_state.get("study_result")
+    if study_result and study_result[0] == username:
+        _, mistakes, analysed_count = study_result
+        st.write(f"Games analysed: **{analysed_count}**")
+
+        if analysed_count == 0:
+            st.info("No recent games were found.")
+        else:
+            col1, col2, col3 = st.columns(3)
+            col1.metric(
+                "Mistakes",
+                int((mistakes["category"] == "Mistake").sum()),
+            )
+            col2.metric(
+                "Major Mistakes",
+                int((mistakes["category"] == "Major Mistake").sum()),
+            )
+            col3.metric(
+                "Blunders",
+                int((mistakes["category"] == "Blunder").sum()),
+            )
+
+            st.markdown("#### Suggested study priorities")
+            for recommendation in build_study_plan(mistakes):
+                st.write(f"- {recommendation}")
+
+            # display mistakes with clickable chess.com links
+            if not mistakes.empty:
+                st.markdown("#### Critical moves to review")
+                st.dataframe(
+                    mistakes,
+                    column_config={
+                        "colour": st.column_config.TextColumn("Playing As"),
+                        "result": st.column_config.TextColumn("Game Result"),
+                        "game_link": st.column_config.LinkColumn(
+                            "View Game",
+                            display_text="Open on Chess.com",
+                        ),
+                        "loss_cp": st.column_config.NumberColumn(
+                            "Evaluation Loss (cp)",
+                            format="%d",
+                        ),
+                        "fen": None,
+                    },
+                    hide_index=True,
+                    use_container_width=True,
+                )
+
+            st.caption(
+                "Thresholds: Mistake ≥100 centipawns(cp); Major Mistake ≥250 cp; "
+                "Blunder ≥500 cp. These are ChessLab classifications, not official Chess.com classifications."
+            )

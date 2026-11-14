@@ -20,8 +20,7 @@ dependencies = [
 "requests>=2.31",
 "streamlit>=1.30",
 "plotly>=5.18",
-"pytest>=8.0",
-"streamlit"
+"pytest>=8.0"
 ]
 
 
