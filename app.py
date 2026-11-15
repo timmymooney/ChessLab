@@ -20,6 +20,29 @@ from chesslab.analytics.performance import (
 LOGO_PATH = Path(__file__).parent / "assets" / "chesslab-logo.png"
 st.set_page_config(page_title="ChessLab", page_icon=LOGO_PATH, layout="wide")
 
+# developer information
+with st.sidebar:
+    st.subheader("About ChessLab")
+
+    st.write(
+        "ChessLab is a chess analytics and coaching application "
+        "built to help players understand their games and improve."
+    )
+
+    st.divider()
+
+    st.markdown("**👨‍💻 Developed by Tim Mooney**")
+    st.caption("Built with Python, Stockfish, and Streamlit.")
+
+    st.link_button(
+        "View on GitHub",
+        "https://github.com/timmymooney/ChessLab",
+    )
+
+    st.link_button(
+        "Connect on LinkedIn",
+        "https://www.linkedin.com/in/timothy-mooney1998/",
+    )
 
 # cache chess.com requests without coupling the data modules to streamlit
 @st.cache_data(show_spinner=False)
@@ -35,6 +58,7 @@ def load_ratings(username):
 # app header
 st.image(str(LOGO_PATH), width=440)
 st.title("Analyse and improve your chess!")
+st.caption("♟️ Developed by Tim Mooney | Python • Stockfish • Streamlit")
 st.divider()
 
 username = st.text_input(

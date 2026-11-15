@@ -115,7 +115,7 @@ ChessLab/
 ├── app.py
 │
 ├── data/
-│   └── chesslab.db  <-- (this is local for now, not pushed to remote) 
+│   └── chesslab.db <-- (local folder only)
 │
 ├── notebooks/
 │   ├── 01_api_exploration.ipynb
@@ -199,7 +199,6 @@ pytest
 ### 5. Run the app
 
 ```bash
-# run from the base root of the project
 streamlit run app.py
 ```
 
