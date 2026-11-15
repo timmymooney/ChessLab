@@ -20,6 +20,7 @@ from chesslab.analytics.performance import (
 LOGO_PATH = Path(__file__).parent / "assets" / "chesslab-logo.png"
 st.set_page_config(page_title="ChessLab", page_icon=LOGO_PATH, layout="wide")
 
+
 # developer information
 with st.sidebar:
     st.subheader("About ChessLab")
@@ -43,6 +44,7 @@ with st.sidebar:
         "Connect on LinkedIn",
         "https://www.linkedin.com/in/timothy-mooney1998/",
     )
+
 
 # cache chess.com requests without coupling the data modules to streamlit
 @st.cache_data(show_spinner=False)
@@ -228,7 +230,7 @@ if "username" in st.session_state:
     )
 
     # choose games before running stockfish
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         game_selection = st.selectbox(
             "Games to analyse",
@@ -243,8 +245,16 @@ if "username" in st.session_state:
             step=1,
         )
 
+    with col3:
+        time_control = st.selectbox(
+            "Chess Type",
+            ["All", "Rapid", "Daily", "Blitz", "Bullet"],
+        )
+
     losses_and_draws_only = game_selection == "Losses and draws only"
-    analysis_settings = (username, int(game_limit), losses_and_draws_only)
+    analysis_settings = (
+        username, int(game_limit), losses_and_draws_only, time_control
+    )
 
     if st.button("Generate study plan", type="primary"):
         # discard an older result if a new analysis fails
@@ -256,6 +266,7 @@ if "username" in st.session_state:
                     limit=int(game_limit),
                     depth=10,
                     losses_and_draws_only=losses_and_draws_only,
+                    time_control=time_control,
                 )
             st.session_state["study_result"] = (
                 analysis_settings, mistakes, analysed_count
@@ -304,7 +315,7 @@ if "username" in st.session_state:
                 mistakes["category"].isin(selected_categories)
             ]
 
-            st.markdown("#### Suggested study priorities")
+            st.markdown("#### Your personalised study priorities")
             for recommendation in build_study_plan(filtered_mistakes):
                 st.write(f"- {recommendation}")
 
@@ -316,6 +327,7 @@ if "username" in st.session_state:
                 st.dataframe(
                     filtered_mistakes,
                     column_config={
+                        "time_control": st.column_config.TextColumn("Chess Type"),
                         "colour": st.column_config.TextColumn("Playing As"),
                         "result": st.column_config.TextColumn("Game Result"),
                         "game_link": st.column_config.LinkColumn(
