@@ -1,7 +1,8 @@
+from pathlib import Path
+
 import plotly.express as px
 import requests
 import streamlit as st
-from pathlib import Path
 
 from chesslab.api.chesscom import get_player_stats
 from chesslab.coaching.study_plan import analyse_recent_games, build_study_plan
@@ -14,19 +15,34 @@ from chesslab.analytics.performance import (
     prepare_games,
 )
 
-# define the logo path
+
+# define the logo path and configure streamlit before displaying anything
 LOGO_PATH = Path(__file__).parent / "assets" / "chesslab-logo.png"
+st.set_page_config(page_title="ChessLab", page_icon=LOGO_PATH, layout="wide")
 
-# display the chesslab branding
-st.image(str(LOGO_PATH), width=440)
+# developer information
+with st.sidebar:
+    st.subheader("About ChessLab")
 
-# configure the app
-st.set_page_config(
-    page_title="",
-    page_icon=LOGO_PATH,
-    layout="wide",
-)
+    st.write(
+        "ChessLab is a chess analytics and coaching application "
+        "built to help players understand their games and improve."
+    )
 
+    st.divider()
+
+    st.markdown("**👨‍💻 Developed by Tim Mooney**")
+    st.caption("Built with Python, Stockfish, and Streamlit.")
+
+    st.link_button(
+        "View on GitHub",
+        "https://github.com/timmymooney/ChessLab",
+    )
+
+    st.link_button(
+        "Connect on LinkedIn",
+        "https://www.linkedin.com/in/timothy-mooney1998/",
+    )
 
 # cache chess.com requests without coupling the data modules to streamlit
 @st.cache_data(show_spinner=False)
@@ -40,7 +56,9 @@ def load_ratings(username):
 
 
 # app header
+st.image(str(LOGO_PATH), width=440)
 st.title("Analyse and improve your chess!")
+st.caption("♟️ Developed by Tim Mooney | Python • Stockfish • Streamlit")
 st.divider()
 
 username = st.text_input(
@@ -191,7 +209,7 @@ if "username" in st.session_state:
         color="my_result",
         barmode="group",
         color_discrete_map={"Win": "#7A9B83", "Loss": "#A65E5E"},
-        title="Game Endings: My Wins vs Opponent Wins",
+        title="Game Endings: My Wins(Green) vs Opponent Wins(Red)",
         labels={
             "end_reason": "Ending Reason",
             "count": "Games",
@@ -205,53 +223,98 @@ if "username" in st.session_state:
     st.divider()
     st.subheader("Recommended Study Plan")
     st.caption(
-        "Analyse five recent games with Stockfish (Stockfish depth=10). "
-        "This may take a minute or two."
+        "Choose which recent games to analyse with Stockfish (depth=10). "
+        "Larger selections may take several minutes."
     )
 
+    # choose games before running stockfish
+    col1, col2 = st.columns(2)
+    with col1:
+        game_selection = st.selectbox(
+            "Games to analyse",
+            ["All results", "Losses and draws only"],
+        )
+    with col2:
+        game_limit = st.number_input(
+            "Number of games",
+            min_value=1,
+            max_value=50,
+            value=5,
+            step=1,
+        )
+
+    losses_and_draws_only = game_selection == "Losses and draws only"
+    analysis_settings = (username, int(game_limit), losses_and_draws_only)
+
     if st.button("Generate study plan", type="primary"):
+        # discard an older result if a new analysis fails
+        st.session_state.pop("study_result", None)
         try:
             with st.spinner("Stockfish is reviewing your recent games..."):
                 mistakes, analysed_count = analyse_recent_games(
-                    username, limit=5, depth=10
+                    username,
+                    limit=int(game_limit),
+                    depth=10,
+                    losses_and_draws_only=losses_and_draws_only,
                 )
             st.session_state["study_result"] = (
-                username, mistakes, analysed_count
+                analysis_settings, mistakes, analysed_count
             )
         except (FileNotFoundError, OSError, ValueError, requests.RequestException) as error:
             st.error(f"Unable to analyse games: {error}")
 
     study_result = st.session_state.get("study_result")
-    if study_result and study_result[0] == username:
+    if study_result and study_result[0] != analysis_settings:
+        st.info("Game selection changed. Click 'Generate study plan' to analyse the new selection.")
+    elif study_result:
         _, mistakes, analysed_count = study_result
         st.write(f"Games analysed: **{analysed_count}**")
 
         if analysed_count == 0:
-            st.info("No recent games were found.")
+            st.info("No recent games matched your selection.")
         else:
+            # metrics always describe all analysed moves, regardless of table filters
             col1, col2, col3 = st.columns(3)
-            col1.metric(
-                "Mistakes",
-                int((mistakes["category"] == "Mistake").sum()),
+            with col1:
+                with st.container(border=True):
+                    st.metric(
+                        "Mistakes",
+                        int((mistakes["category"] == "Mistake").sum()),
+                    )
+            with col2:
+                with st.container(border=True):
+                    st.metric(
+                        "Major Mistakes",
+                        int((mistakes["category"] == "Major Mistake").sum()),
+                    )
+            with col3:
+                with st.container(border=True):
+                    st.metric(
+                        "Blunders",
+                        int((mistakes["category"] == "Blunder").sum()),
+                    )
+
+            # filter displayed moves without repeating stockfish analysis
+            selected_categories = st.multiselect(
+                "Show move classifications",
+                ["Mistake", "Major Mistake", "Blunder"],
+                default=["Mistake", "Major Mistake", "Blunder"],
             )
-            col2.metric(
-                "Major Mistakes",
-                int((mistakes["category"] == "Major Mistake").sum()),
-            )
-            col3.metric(
-                "Blunders",
-                int((mistakes["category"] == "Blunder").sum()),
-            )
+            filtered_mistakes = mistakes[
+                mistakes["category"].isin(selected_categories)
+            ]
 
             st.markdown("#### Suggested study priorities")
-            for recommendation in build_study_plan(mistakes):
+            for recommendation in build_study_plan(filtered_mistakes):
                 st.write(f"- {recommendation}")
 
-            # display mistakes with clickable chess.com links
-            if not mistakes.empty:
-                st.markdown("#### Critical moves to review")
+            # display critical moves with clickable chess.com links
+            st.markdown("#### Critical moves to review")
+            if filtered_mistakes.empty:
+                st.info("No moves match the selected classifications.")
+            else:
                 st.dataframe(
-                    mistakes,
+                    filtered_mistakes,
                     column_config={
                         "colour": st.column_config.TextColumn("Playing As"),
                         "result": st.column_config.TextColumn("Game Result"),
@@ -270,6 +333,7 @@ if "username" in st.session_state:
                 )
 
             st.caption(
-                "Thresholds: Mistake ≥100 centipawns(cp); Major Mistake ≥250 cp; "
-                "Blunder ≥500 cp. These are ChessLab classifications, not official Chess.com classifications."
+                "Thresholds: Mistake ≥100 centipawns (cp); Major Mistake ≥250 cp; "
+                "Blunder ≥500 cp. These are ChessLab classifications, not official "
+                "Chess.com classifications. Counters show all analysed moves."
             )
