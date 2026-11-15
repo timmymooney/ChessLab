@@ -23,7 +23,7 @@ The long-term goal is to allow a user to enter their Chess.com username, select 
 * [X] Build interactive Streamlit (or similar) application
 * [X] Classify opening, middlegame and endgame positions in app
 * [X] Build overall player performance profiles
-* [   ] Generate personalised study recommendations (WIP)
+* [X] Generate personalised study recommendations
 * [   ] Generate natural-language analysis reports
 * [   ] Deploy application
 
