@@ -11,7 +11,7 @@ from chesslab.api.chesscom import download_monthly_games, get_game_archives
 
 
 COLUMNS = [
-    "game", "date", "colour", "result", "move", "played", "best",
+    "game", "date", "time_control", "colour", "result", "move", "played", "best",
     "category", "loss_cp", "fen", "phase", "game_link",
 ]
 
@@ -30,7 +30,48 @@ def get_player_result(game, username):
     return "Unknown"
 
 
-def get_recent_games(username, limit=5, losses_and_draws_only=False):
+TIME_CONTROL_MAPPING = {
+    "1800": "Rapid",
+    "900+10": "Rapid",
+    "600": "Rapid",
+    "300": "Blitz",
+    "1/86400": "Daily",
+    "1/259200": "Daily",
+    "1/864000": "Daily",
+    "-": "Other",
+}
+
+
+def get_time_control(game):
+    # map known chess.com values and classify other common time controls
+    value = game.headers.get("TimeControl", "").strip()
+    if value in TIME_CONTROL_MAPPING:
+        return TIME_CONTROL_MAPPING[value]
+    if not value or value == "?":
+        return "Other"
+
+    try:
+        if "/" in value:
+            # daily pgn values are typically moves / seconds per move
+            _, seconds = value.split("/", 1)
+            return "Daily" if int(seconds) >= 86400 else "Other"
+
+        parts = value.split("+")
+        base = int(parts[0])
+        increment = int(parts[1]) if len(parts) == 2 else 0
+        if base >= 86400:
+            return "Daily"
+        estimated_seconds = base + 40 * increment
+        if estimated_seconds < 180:
+            return "Bullet"
+        if estimated_seconds < 600:
+            return "Blitz"
+        return "Rapid"
+    except (ValueError, IndexError):
+        return "Other"
+
+
+def get_recent_games(username, limit=5, losses_and_draws_only=False, time_control="All"):
     # select eligible games before limiting how many stockfish will analyse
     games = []
     for archive in reversed(get_game_archives(username)):
@@ -46,6 +87,8 @@ def get_recent_games(username, limit=5, losses_and_draws_only=False):
                 continue
             if losses_and_draws_only and get_player_result(game, username) not in ("Loss", "Draw"):
                 continue
+            if time_control != "All" and get_time_control(game) != time_control:
+                continue
             monthly_games.append(game)
 
         games.extend(reversed(monthly_games))
@@ -55,7 +98,9 @@ def get_recent_games(username, limit=5, losses_and_draws_only=False):
     return games[:limit]
 
 
-def analyse_recent_games(username, limit=5, depth=10, losses_and_draws_only=False):
+def analyse_recent_games(
+    username, limit=5, depth=10, losses_and_draws_only=False, time_control="All"
+):
     # support stockfish on macos and in docker
     engine_path = os.getenv("STOCKFISH_PATH") or shutil.which("stockfish")
     if not engine_path:
@@ -63,7 +108,7 @@ def analyse_recent_games(username, limit=5, depth=10, losses_and_draws_only=Fals
             "Stockfish was not found. Set STOCKFISH_PATH to its executable path."
         )
 
-    games = get_recent_games(username, limit, losses_and_draws_only)
+    games = get_recent_games(username, limit, losses_and_draws_only, time_control)
     rows = []
 
     with chess.engine.SimpleEngine.popen_uci(engine_path) as engine:
@@ -138,6 +183,7 @@ def analyse_recent_games(username, limit=5, depth=10, losses_and_draws_only=Fals
                 rows.append({
                     "game": game_number,
                     "date": game.headers.get("Date", "Unknown"),
+                    "time_control": get_time_control(game),
                     "colour": colour,
                     "result": my_result,
                     "move": move_number,
@@ -154,16 +200,54 @@ def analyse_recent_games(username, limit=5, depth=10, losses_and_draws_only=Fals
 
 
 def build_study_plan(mistakes):
+    # recommendations describe observed patterns, not unverified tactical causes
     if mistakes.empty:
         return [
-            "No moves matched the current selection. "
-            "Try another severity filter or analyse more games."
+            "No moves matched the current selection. Try another severity "
+            "filter or analyse more games."
         ]
 
     priorities = []
-    for phase, count in mistakes["phase"].value_counts().items():
+
+    # focus on the phase with the most significant errors
+    phase_counts = mistakes["phase"].value_counts()
+    phase = phase_counts.index[0]
+    count = int(phase_counts.iloc[0])
+    priorities.append(
+        f"‼️ Priority 1, {phase} improvement: {count} significant evaluation "
+        f"drops occurred in the {phase.lower()}. Review the three largest "
+        "losses in this phase, replay the positions, and compare your "
+        "candidate moves with Stockfish's suggestions."
+    )
+
+    # compare errors per game rather than raw counts across unequal game samples
+    games_by_colour = mistakes.groupby("colour")["game"].nunique()
+    if len(games_by_colour) > 1:
+        counts = mistakes.groupby("colour").size()
+        rates = counts / games_by_colour
+        weaker_colour = rates.idxmax()
         priorities.append(
-            f"{phase}: review {count} significant evaluation drops "
-            "and compare your moves with Stockfish suggestions."
+            f"❗️ Priority 2, playing as {weaker_colour}: The analysed games "
+            f"with significant errors averaged {rates[weaker_colour]:.1f} "
+            "flagged moves per game for this colour. Review those games "
+            "and note any repeated difficulties. This comparison excludes "
+            "games without flagged moves."
         )
+    else:
+        priorities.append(
+            "❗️ Priority 2, colour review: Compare your games as White and "
+            "Black once you have analysed more games with significant errors."
+        )
+
+    # point to concrete positions using the largest evaluation losses
+    worst = mistakes.nlargest(3, "loss_cp")
+    positions = ", ".join(
+        f"game {int(row.game)}, move {int(row.move)} ({int(row.loss_cp)} cp)"
+        for row in worst.itertuples()
+    )
+    priorities.append(
+        f"🔍 Priority 3, review decisive errors: Start with {positions}. "
+        "Use the game links to inspect the positions and explain what "
+        "changed after each move."
+    )
     return priorities
