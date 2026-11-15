@@ -22,7 +22,7 @@ from chesslab.analytics.performance import (
 
 # define the logo path and configure streamlit before displaying anything
 LOGO_PATH = Path(__file__).parent / "assets" / "chesslab-logo.png"
-st.set_page_config(page_title="ChessLab", page_icon=LOGO_PATH, layout="wide")
+st.set_page_config(page_title="ChessLab", page_icon=LOGO_PATH, layout="centered")
 
 
 # developer information
@@ -267,7 +267,7 @@ if profile_ready:
         fig.update_layout(hovermode="x unified", margin=dict(t=55, b=30))
         st.plotly_chart(fig, use_container_width=True)
 
-        st.success("Player profile loaded! Open the 🔍 Chess Analysis tab to study your games.")
+        st.success("Player profile loaded! Open the 🔍 Game Analysis tab to study your games.")
 
     with analysis_tab:
         st.divider()
