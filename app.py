@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pandas as pd
+
 import chess
 import chess.svg
 import streamlit.components.v1 as components
@@ -140,6 +142,78 @@ def show_move_review(mistakes):
         st.link_button("View game on Chess.com", selected["game_link"])
 
 
+# summarise openings using readable names from the backend
+
+def get_opening_stats(games_df):
+    if "opening_name" not in games_df.columns:
+        return pd.DataFrame()
+
+    games = games_df.copy()
+    games["opening_name"] = games["opening_name"].fillna("").astype(str).str.strip()
+    games = games[
+        games["opening_name"].ne("")
+        & games["my_colour"].isin(["White", "Black"])
+        & games["my_result"].isin(["Win", "Loss", "Draw"])
+    ]
+    if games.empty:
+        return pd.DataFrame()
+
+    stats = (
+        games.groupby(["my_colour", "opening_name"])
+        .agg(
+            games=("my_result", "size"),
+            wins=("my_result", lambda x: (x == "Win").sum()),
+            draws=("my_result", lambda x: (x == "Draw").sum()),
+        )
+        .reset_index()
+    )
+    stats["score_rate"] = 100 * (stats["wins"] + 0.5 * stats["draws"]) / stats["games"]
+    return stats
+
+
+def show_opening_repertoire(games_df):
+    st.subheader("♟️ Opening Repertoire")
+    st.caption("Your favourite, strongest and weakest openings as White or Black.")
+
+    stats = get_opening_stats(games_df)
+    if stats.empty:
+        st.info("No named openings were found in these Chess.com games.")
+        return
+
+    colour = st.radio(
+        "Playing as", ["White", "Black"], horizontal=True, key="opening_colour"
+    )
+    selected = stats[stats["my_colour"] == colour]
+    if selected.empty:
+        st.info(f"No named openings found for games played as {colour}.")
+        return
+
+    favourite = selected.sort_values(
+        ["games", "opening_name"], ascending=[False, True]
+    ).iloc[0]
+    best = selected.sort_values(
+        ["score_rate", "games", "opening_name"], ascending=[False, False, True]
+    ).iloc[0]
+    worst = selected.sort_values(
+        ["score_rate", "games", "opening_name"], ascending=[True, False, True]
+    ).iloc[0]
+
+    # keep the cards stacked for the centred streamlit layout
+    for label, opening, detail in [
+        ("❤️ Favourite Opening", favourite, f"{int(favourite['games'])} games played"),
+        ("📈 Most Successful Opening", best,
+         f"{best['score_rate']:.1f}% score · {int(best['games'])} games"),
+        ("📉 Least Successful Opening", worst,
+         f"{worst['score_rate']:.1f}% score · {int(worst['games'])} games"),
+    ]:
+        with st.container(border=True):
+            st.caption(label)
+            st.write(f"**{opening['opening_name']}**")
+            st.caption(detail)
+
+    st.caption("Score = wins + half a point per draw. All named openings are eligible.")
+
+
 # app header
 st.image(str(LOGO_PATH), width=440)
 st.title("Analyse and improve your chess!")
@@ -266,6 +340,9 @@ if profile_ready:
         )
         fig.update_layout(hovermode="x unified", margin=dict(t=55, b=30))
         st.plotly_chart(fig, use_container_width=True)
+
+        st.divider()
+        show_opening_repertoire(games_df)
 
         st.success("Player profile loaded! Open the 🔍 Game Analysis tab to study your games.")
 

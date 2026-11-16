@@ -1,9 +1,34 @@
 import re
+from urllib.parse import unquote, urlparse
 
 import pandas as pd
 
 from chesslab.api.chesscom import get_game_archives, download_monthly_games
 from chesslab.chess.parser import parse_games, get_game_info
+
+
+def get_opening_name(game):
+    # prefer the named opening; chess.com often supplies it as an eco url
+    for key in ("Opening", "OpeningName"):
+        value = game.headers.get(key, "").strip()
+        if value and not re.fullmatch(r"(?:ECO\s*)?[A-E][0-9]{2}", value, re.I):
+            return value
+
+    for key in ("ECOUrl", "OpeningUrl"):
+        url = game.headers.get(key, "").strip()
+        if not url:
+            continue
+        parsed = urlparse(url)
+        if parsed.netloc.lower() not in ("chess.com", "www.chess.com"):
+            continue
+        parts = parsed.path.strip("/").split("/")
+        if len(parts) >= 2 and parts[0].lower() == "openings":
+            slug = unquote(parts[1]).replace("-", " ").strip()
+            # some urls end with move-sequence suffixes; keep the readable name
+            slug = re.split(r"\s+\d+\.\s*", slug, maxsplit=1)[0].strip()
+            if slug and not re.fullmatch(r"(?:ECO\s*)?[A-E][0-9]{2}", slug, re.I):
+                return slug
+    return None
 
 
 def load_player_games(username):
@@ -21,7 +46,12 @@ def load_player_games(username):
                 monthly_pgns.append(pgn)
 
     games = parse_games("\n\n".join(monthly_pgns))
-    return pd.DataFrame([get_game_info(game, username) for game in games])
+    rows = []
+    for game in games:
+        row = get_game_info(game, username)
+        row["opening_name"] = get_opening_name(game)
+        rows.append(row)
+    return pd.DataFrame(rows)
 
 
 def get_end_reason(termination):
