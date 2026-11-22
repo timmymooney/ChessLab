@@ -167,7 +167,14 @@ def get_opening_stats(games_df):
         )
         .reset_index()
     )
-    stats["score_rate"] = 100 * (stats["wins"] + 0.5 * stats["draws"]) / stats["games"]
+    stats["losses"] = stats["games"] - stats["wins"] - stats["draws"]
+    stats["win_rate"] = stats["wins"] / stats["games"]
+    stats["loss_rate"] = stats["losses"] / stats["games"]
+
+    # Reward both the number of results and their consistency.
+    # An opening with 15 wins from 20 games outranks one with 1 win from 1 game.
+    stats["success_score"] = stats["wins"] * stats["win_rate"]
+    stats["weakness_score"] = stats["losses"] * stats["loss_rate"]
     return stats
 
 
@@ -192,26 +199,37 @@ def show_opening_repertoire(games_df):
         ["games", "opening_name"], ascending=[False, True]
     ).iloc[0]
     best = selected.sort_values(
-        ["score_rate", "games", "opening_name"], ascending=[False, False, True]
+        ["success_score", "wins", "win_rate", "games", "opening_name"],
+        ascending=[False, False, False, False, True],
     ).iloc[0]
     worst = selected.sort_values(
-        ["score_rate", "games", "opening_name"], ascending=[True, False, True]
+        ["weakness_score", "losses", "loss_rate", "games", "opening_name"],
+        ascending=[False, False, False, False, True],
     ).iloc[0]
 
-    # keep the cards stacked for the centred streamlit layout
+    # Keep the three cards stacked for the centred Streamlit layout.
     for label, opening, detail in [
         ("❤️ Favourite Opening", favourite, f"{int(favourite['games'])} games played"),
-        ("📈 Most Successful Opening", best,
-         f"{best['score_rate']:.1f}% score · {int(best['games'])} games"),
-        ("📉 Least Successful Opening", worst,
-         f"{worst['score_rate']:.1f}% score · {int(worst['games'])} games"),
+        (
+            "📈 Most Successful Opening", best,
+            f"{int(best['wins'])} wins · {best['win_rate']:.1%} win rate · "
+            f"{int(best['games'])} games",
+        ),
+        (
+            "📉 Least Successful Opening", worst,
+            f"{int(worst['losses'])} losses · {worst['loss_rate']:.1%} loss rate · "
+            f"{int(worst['games'])} games",
+        ),
     ]:
         with st.container(border=True):
             st.caption(label)
             st.write(f"**{opening['opening_name']}**")
             st.caption(detail)
 
-    st.caption("Score = wins + half a point per draw. All named openings are eligible.")
+    st.caption(
+        "Success ranks openings by wins × win rate; weakness ranks by "
+        "losses × loss rate. All named openings are eligible."
+    )
 
 
 # app header

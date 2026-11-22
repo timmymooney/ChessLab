@@ -215,9 +215,7 @@ def build_study_plan(mistakes):
     count = int(phase_counts.iloc[0])
     priorities.append(
         f"‼️ Priority 1, {phase} improvement: {count} significant evaluation "
-        f"drops occurred in the {phase.lower()}. Review the three largest "
-        "losses in this phase, replay the positions, and compare your "
-        "candidate moves with Stockfish's suggestions."
+        f"drops occurred in the {phase.lower()}."
     )
 
     # compare errors per game rather than raw counts across unequal game samples
@@ -229,9 +227,7 @@ def build_study_plan(mistakes):
         priorities.append(
             f"❗️ Priority 2, playing as {weaker_colour}: The analysed games "
             f"with significant errors averaged {rates[weaker_colour]:.1f} "
-            "flagged moves per game for this colour. Review those games "
-            "and note any repeated difficulties. This comparison excludes "
-            "games without flagged moves."
+            "flagged moves per game for this colour."
         )
     else:
         priorities.append(
@@ -246,8 +242,6 @@ def build_study_plan(mistakes):
         for row in worst.itertuples()
     )
     priorities.append(
-        f"🔍 Priority 3, review decisive errors: Start with {positions}. "
-        "Use the game links to inspect the positions and explain what "
-        "changed after each move."
+        f"🔍 Priority 3, review decisive errors: Start with {positions}."
     )
     return priorities
